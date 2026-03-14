@@ -1,0 +1,15 @@
+version: "3.8"
+
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"   # FastAPI backend
+      - "8501:8501"   # Streamlit frontend
+    env_file:
+      - .env
+    environment:
+      - ENDEE_HOST=host.docker.internal   # connects to Endee running on host machine
+      - BACKEND_URL=http://localhost:8000
+    depends_on: []
+    restart: unless-stopped

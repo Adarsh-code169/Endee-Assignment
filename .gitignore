@@ -1,0 +1,18 @@
+# env and secrets
+.env
+
+# python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# docker
+*.log

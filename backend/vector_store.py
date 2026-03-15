@@ -1,11 +1,12 @@
 import logging
 import requests
+import json
+import msgpack
 from typing import List, Dict
 
 logger = logging.getLogger(__name__)
 
 REQUEST_TIMEOUT = 10  # seconds
-
 
 class EndeeVectorStore:
     """Client for the Endee vector database — handles insert and search operations."""
@@ -20,12 +21,15 @@ class EndeeVectorStore:
         """Create collection if it doesn't exist yet."""
         try:
             resp = requests.post(
-                f"{self.base_url}/collections",
-                json={"name": self.collection},
+                f"{self.base_url}/api/v1/index/create",
+                json={"index_name": self.collection, "dim": 384, "space_type": "cosine"},
                 headers=self.headers,
                 timeout=REQUEST_TIMEOUT
             )
-            logger.info(f"Collection '{self.collection}' ready (status: {resp.status_code})")
+            if resp.status_code in (200, 409):
+                logger.info(f"Collection '{self.collection}' ready (status: {resp.status_code})")
+            else:
+                logger.error(f"Failed to create collection: {resp.status_code} — {resp.text}")
         except requests.ConnectionError:
             logger.error(f"Can't connect to Endee at {self.base_url} — is the server running?")
         except requests.Timeout:
@@ -34,14 +38,14 @@ class EndeeVectorStore:
     def insert(self, vectors: List[List[float]], documents: List[Dict]) -> bool:
         """Insert vectors with their text and metadata into Endee."""
         payload = [
-            {"vector": vec, "metadata": doc["metadata"], "text": doc["text"], "id": doc["id"]}
+            {"vector": vec, "meta": json.dumps({"text": doc["text"], **doc["metadata"]}), "filter": "", "id": doc["id"]}
             for vec, doc in zip(vectors, documents)
         ]
 
         try:
             resp = requests.post(
-                f"{self.base_url}/collections/{self.collection}/insert",
-                json={"items": payload},
+                f"{self.base_url}/api/v1/index/{self.collection}/vector/insert",
+                json=payload,
                 headers=self.headers,
                 timeout=REQUEST_TIMEOUT
             )
@@ -58,19 +62,40 @@ class EndeeVectorStore:
         """Search for the most similar vectors — returns top_k results."""
         try:
             resp = requests.post(
-                f"{self.base_url}/collections/{self.collection}/search",
-                json={"vector": query_vector, "top_k": top_k},
+                f"{self.base_url}/api/v1/index/{self.collection}/search",
+                json={"vector": query_vector, "k": top_k},
                 headers=self.headers,
                 timeout=REQUEST_TIMEOUT
             )
             if resp.status_code == 200:
-                results = resp.json()
-                return [
-                    {"text": item.get("text", ""), "metadata": item.get("metadata", {}), "score": item.get("score", 0.0)}
-                    for item in results.get("results", [])
-                ]
-            logger.error(f"Search failed: {resp.status_code}")
+                results = msgpack.unpackb(resp.content, raw=False)
+                parsed = []
+                # Result format is usually: [distance, id, meta_string, filter, ...]
+                for item in results:
+                    if len(item) < 3:
+                        continue
+                    
+                    dist, doc_id, meta_bytes = item[0], item[1], item[2]
+                    
+                    meta_str = meta_bytes if isinstance(meta_bytes, str) else meta_bytes.decode('utf-8', errors='ignore')
+                    try:
+                        meta_dict = json.loads(meta_str) if meta_str else {}
+                    except json.JSONDecodeError:
+                        meta_dict = {}
+
+                    text = meta_dict.pop("text", "")
+                    score = 1.0 - float(dist)
+
+                    parsed.append({
+                        "text": text,
+                        "metadata": meta_dict,
+                        "score": score
+                    })
+
+                return parsed
+            logger.error(f"Search failed: {resp.status_code} — {resp.text}")
             return []
         except (requests.ConnectionError, requests.Timeout) as e:
             logger.error(f"Search request failed: {e}")
             return []
+

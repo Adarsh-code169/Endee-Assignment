@@ -11,8 +11,9 @@ REQUEST_TIMEOUT = 10  # seconds
 class EndeeVectorStore:
     """Client for the Endee vector database — handles insert and search operations."""
 
-    def __init__(self, host: str = "localhost", port: int = 8080, collection: str = "research_papers"):
-        self.base_url = f"http://{host}:{port}"
+    def __init__(self, host: str = "localhost", port: int = None, collection: str = "research_papers"):
+        prefix = "" if host.startswith("http://") or host.startswith("https://") else "http://"
+        self.base_url = f"{prefix}{host}:{port}" if port else f"{prefix}{host}"
         self.collection = collection
         self.headers = {"Content-Type": "application/json"}
         self._ensure_collection()

@@ -9,7 +9,7 @@ services:
     env_file:
       - .env
     environment:
-      - ENDEE_HOST=localhost   # connects to Endee running inside the same container
+      - ENDEE_HOST=endee.nstsdc.org
       - BACKEND_URL=http://localhost:8000
     depends_on: []
     restart: unless-stopped

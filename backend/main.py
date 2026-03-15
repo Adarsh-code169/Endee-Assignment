@@ -31,7 +31,8 @@ async def lifespan(app: FastAPI):
     global vector_store, rag_pipeline
 
     host = os.getenv("ENDEE_HOST", "localhost")
-    port = int(os.getenv("ENDEE_PORT", "8080"))
+    port_str = os.getenv("ENDEE_PORT")
+    port = int(port_str) if port_str else None
     groq_key = os.getenv("GROQ_API_KEY")
 
     if not groq_key:

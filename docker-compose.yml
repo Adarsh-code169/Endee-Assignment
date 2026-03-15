@@ -9,7 +9,7 @@ services:
     env_file:
       - .env
     environment:
-      - ENDEE_HOST=host.docker.internal   # connects to Endee running on host machine
+      - ENDEE_HOST=localhost   # connects to Endee running inside the same container
       - BACKEND_URL=http://localhost:8000
     depends_on: []
     restart: unless-stopped

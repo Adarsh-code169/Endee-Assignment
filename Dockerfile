@@ -10,7 +10,18 @@ RUN apt-get update && apt-get install -y \
     curl \
     git \
     pkg-config \
+    wget \
+    gnupg \
+    lsb-release \
+    && wget https://apt.llvm.org/llvm.sh \
+    && chmod +x llvm.sh \
+    && sed -i 's/sudo //g' llvm.sh \
+    && ./llvm.sh 19 \
+    && rm llvm.sh \
     && rm -rf /var/lib/apt/lists/*
+
+ENV CC=clang-19
+ENV CXX=clang++-19
 
 WORKDIR /app
 
@@ -19,7 +30,7 @@ WORKDIR /app
 RUN git clone https://github.com/EndeeLabs/endee.git /app/endee \
     && cd /app/endee \
     && mkdir build && cd build \
-    && cmake -DUSE_AVX2=OFF -DCMAKE_BUILD_TYPE=Release .. \
+    && cmake -DUSE_AVX2=OFF -DUSE_NEON=ON -DCMAKE_BUILD_TYPE=Release .. \
     && make -j$(nproc)
 
 # Copy application files

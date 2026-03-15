@@ -49,7 +49,7 @@ class RAGPipeline:
                     {"role": "user", "content": f"Context:\n{context_str}\n\nQuestion: {query}"}
                 ],
                 temperature=LLM_TEMPERATURE,
-                max_completion_tokens=MAX_TOKENS,
+                max_tokens=MAX_TOKENS,
                 top_p=1
             )
             answer = completion.choices[0].message.content

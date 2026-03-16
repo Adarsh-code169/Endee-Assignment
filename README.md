@@ -4,6 +4,9 @@ A RAG-based research assistant that lets you upload academic PDFs and ask questi
 
 ---
 
+## Demo
+
+🔗 Google Drive Demo: https://drive.google.com/file/d/11UGEhl7fCkm1TP3Kiatr184JePkf4LuU/view?usp=sharing
 ## Problem
 
 Searching through long academic papers manually is slow. Keyword search doesn't understand context or intent. This project uses semantic search + RAG to give you precise, cited answers from your documents.
